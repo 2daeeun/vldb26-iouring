@@ -2,6 +2,13 @@
 
 This repository contains the scripts, configurations, and plotting tooling required to reproduce all experiments reported in our paper.
 
+For the Figure 5 local runner and DELL instructions, see
+[experiments/FIG5_DELL_KO.md](experiments/FIG5_DELL_KO.md).
+It runs seven cases on regular O_DIRECT files, or all ten cases on an explicitly
+selected dedicated raw NVMe namespace. See [the raw-NVMe guide](experiments/FIG5_NVME_KO.md)
+for Passthru, IOPoll, SQPoll, and device preparation requirements.
+The [IOPoll analysis and kernel patch status](experiments/FIG5_DELL_X4_ANALYSIS_20260912_KO.md)
+also records the switch to keeping source changes on ThinkPad only.
 
 ## Run experiments
 
@@ -87,6 +94,3 @@ REPO_URL=https://git.kernel.dk/linux.git BRANCH=for-next ./ubuntu_install_kernel
 # Select kernel for next boot:
 ./select_kernel.sh
 ```
-
-
-

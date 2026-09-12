@@ -91,8 +91,8 @@ void BufferManager::init() {
     if (cfg.setup_mode == SetupMode::SQPOLL) {
         params.flags |= IORING_SETUP_SQPOLL;
         params.sq_thread_idle = 1000;
-        if (cfg.core_id != -1) {
-            params.sq_thread_cpu = cfg.core_id + 1;
+        if (cfg.sqpoll_core_id != -1 || cfg.core_id != -1) {
+            params.sq_thread_cpu = cfg.sqpoll_core_id != -1 ? cfg.sqpoll_core_id : cfg.core_id + 1;
             params.flags |= IORING_SETUP_SQ_AFF;
         }
     }
@@ -110,6 +110,8 @@ void BufferManager::init() {
     if (res < 0) {
         throw std::system_error(-res, std::system_category());
     }
+    Logger::info("ring_setup flags=", params.flags, " sq_entries=", params.sq_entries,
+                 " cq_entries=", params.cq_entries, " sqpoll_cpu=", params.sq_thread_cpu);
 
     if (cfg.reg_ring) {
         ensure(io_uring_register_ring_fd(&ring) == 1);
@@ -138,6 +140,7 @@ void BufferManager::init() {
 
 
     r = std::make_unique<Reactor>(ring);
+    r->nvme_cmds = cfg.nvme_cmds;
     mini::set_reactor(*r);
     r->total_io_fibers = cfg.concurrency;
 
@@ -290,9 +293,7 @@ void BufferManager::handleFault(PID pid) {
                 io_uring_for_each_cqe(&ring, head, cqe) {
                     ++i;
                     check_iou(cqe->res);
-                    if (!cfg.nvme_cmds) {
-                        ensure(cqe->res == pageSize);
-                    }
+                    ensure(page_io_succeeded(cqe->res, cfg.nvme_cmds), "NVMe status error or short page I/O");
                 }
                 io_uring_cq_advance(&ring, i);
                 left -= i;
@@ -589,9 +590,7 @@ void BufferManager::evict() {
                     io_uring_for_each_cqe(&ring, head, cqe) {
                         ++i;
                         check_iou(cqe->res);
-                        if (!cfg.nvme_cmds) {
-                            ensure(cqe->res == pageSize);
-                        }
+                        ensure(page_io_succeeded(cqe->res, cfg.nvme_cmds), "NVMe status error or short page I/O");
                     }
                     io_uring_cq_advance(&ring, i);
                     left -= i;

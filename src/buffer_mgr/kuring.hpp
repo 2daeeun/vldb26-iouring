@@ -1,6 +1,7 @@
 #pragma once
 
 #include "exp_table.hpp"
+#include "io_completion.hpp"
 #include "spsc_ring.hpp"
 #include "tpcc/random_generator.hpp"
 #include "utils/cpu_map.hpp"
@@ -31,6 +32,7 @@ extern RDTSCClock write_clock;
 
 
 struct BaseReactor {
+    bool nvme_cmds = false;
     enum class State : uint8_t { Ready,
                                  Running,
                                  Parked,
@@ -285,6 +287,7 @@ struct UringReactor : BaseReactor {
         io_uring_for_each_cqe(&ring_, head, cqe) {
             ++i;
             check_iou(cqe->res);
+            ensure(page_io_succeeded(cqe->res, nvme_cmds), "NVMe status error or short page I/O");
 
             auto* op = static_cast<Op*>(io_uring_cqe_get_data(cqe));
             ensure(op != nullptr);
@@ -519,8 +522,11 @@ struct LibaioReactor : BaseReactor {
 };
 
 
+#if defined(BUFFER_MGR_USE_LIBAIO) && BUFFER_MGR_USE_LIBAIO
+using Reactor = LibaioReactor;
+#else
 using Reactor = UringReactor;
-// using Reactor = LibaioReactor;
+#endif
 
 
 namespace mini {

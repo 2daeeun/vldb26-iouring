@@ -12,6 +12,7 @@ void Config::parse(int argc, char** argv) {
     parser.parse("--nvme_cmds", nvme_cmds, cli::Parser::optional);
 
     parser.parse("--core_id", core_id, cli::Parser::optional);
+    parser.parse("--sqpoll_core_id", sqpoll_core_id, cli::Parser::optional);
     parser.parse("--stats_interval", stats_interval, cli::Parser::optional);
     parser.parse("--duration", duration, cli::Parser::optional);
 

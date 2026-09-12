@@ -17,6 +17,7 @@ struct Config : Singleton<Config> {
     bool nvme_cmds = false;
 
     int core_id = 64;
+    int sqpoll_core_id = -1; // -1 preserves the original core_id+1 placement
     uint32_t stats_interval = 1'000'000;
     uint32_t duration = 30'000;
 

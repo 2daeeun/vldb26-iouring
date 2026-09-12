@@ -1,6 +1,9 @@
 lsyncd*.conf.lua
 .cache/
 build/
+build-fig5*/
+results/figure5/
+__pycache__/
 .Rhistory
 
 

@@ -17,9 +17,10 @@ endif()
 add_compile_options("-fcoroutines")
 add_compile_options("-g")
 
-set(CMAKE_CXX_FLAGS "-Wall -Wextra") # Enable debugging and define DEBUG
-
-set(CMAKE_CXX_FLAGS "-Waddress-of-packed-member -march=native -mavx512f -mavx512bw -march=native") 
+add_compile_options(-Wall -Wextra -Waddress-of-packed-member)
+# Compile on each experiment host. Do not force AVX-512 on AVX2-only CPUs.
+set(RINGDING_ARCH "native" CACHE STRING "CPU architecture passed to -march")
+add_compile_options("-march=${RINGDING_ARCH}")
 
 
 # Set the different build type flags
@@ -32,6 +33,10 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -flto") # Enable optimizations for Release
 
 # Include ExternalProject module
 include(ExternalProject)
+
+if(NOT EXISTS "${CMAKE_SOURCE_DIR}/libs/liburing/configure")
+  message(FATAL_ERROR "Initialize libs/liburing first; see experiments/FIG5_DELL_KO.md")
+endif()
 
 # Define liburing as an external project
 ExternalProject_Add(liburing_build
@@ -71,6 +76,5 @@ FetchContent_MakeAvailable(Boost)
 include_directories(src/)
 
 add_subdirectory(src)
-
 
 

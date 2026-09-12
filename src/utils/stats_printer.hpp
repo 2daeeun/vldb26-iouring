@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mutex>
+
 #include "utils/singleton.hpp"
 
 #include <functional>

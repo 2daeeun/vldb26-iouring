@@ -13,13 +13,14 @@ extern uint32_t nsid;
 extern uint32_t lba_shift;
 
 int nvme_get_info(int fd) {
-    nsid = ioctl(fd, NVME_IOCTL_ID);
-    check_ret(nsid);
+    int id = ioctl(fd, NVME_IOCTL_ID);
+    check_ret(id);
+    nsid = id;
 
     constexpr uint32_t NVME_DEFAULT_IOCTL_TIMEOUT = 0;
     constexpr uint32_t NVME_IDENTIFY_CSI_SHIFT = 24;
 
-    struct nvme_id_ns ns;
+    struct nvme_id_ns ns = {};
     struct nvme_passthru_cmd cmd = {
         .opcode = nvme_admin_identify,
         .nsid = nsid,
@@ -30,7 +31,13 @@ int nvme_get_info(int fd) {
         .timeout_ms = NVME_DEFAULT_IOCTL_TIMEOUT,
     };
 
-    check_ret(ioctl(fd, NVME_IOCTL_ADMIN_CMD, &cmd));
+    int status = ioctl(fd, NVME_IOCTL_ADMIN_CMD, &cmd);
+    check_ret(status);
+    ensure(status == 0, "NVMe Identify command returned an error status");
+    ensure((ns.flbas & 0x60) == 0, "Extended LBA format index is not supported");
+    ensure(ns.lbaf[ns.flbas & 0x0f].ms == 0, "NVMe metadata is not supported");
+    ensure(ns.lbaf[ns.flbas & 0x0f].ds >= 9 && ns.lbaf[ns.flbas & 0x0f].ds <= 12,
+           "NVMe logical block size must be 512 to 4096 bytes");
 
     uint32_t lba_size = 1 << ns.lbaf[(ns.flbas & 0x0f)].ds;
     lba_shift = ilog2(lba_size);

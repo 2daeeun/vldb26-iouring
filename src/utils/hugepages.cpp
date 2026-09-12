@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <string>
 #include <sys/mman.h>
+#include <unistd.h>
 
 namespace {
 

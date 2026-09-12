@@ -1,6 +1,6 @@
 add_subdirectory(mt)
 
-add_library(buffer_mgr_utils
+set(BUFFER_MGR_UTIL_SOURCES
     tpcc/random_generator.cpp
     tpcc/types.cpp
     tpcc/tpcc_globals.cpp
@@ -10,20 +10,22 @@ add_library(buffer_mgr_utils
     bm.cpp
 
 )
-target_link_libraries(buffer_mgr_utils utils liburing)
 
-
-set(SOURCES
-    buffer_mgr.cpp
-)
-
-foreach(SRC_FILE ${SOURCES})
-    get_filename_component(EXE_NAME ${SRC_FILE} NAME_WE) # Extract filename without extension
-    add_executable(${EXE_NAME} ${SRC_FILE})
-    target_link_libraries(${EXE_NAME} liburing utils buffer_mgr_utils)
-
-
-    #target_compile_definitions(${EXE_NAME} PRIVATE BOOST_FIBERS_NO_ATOMICS)
-    target_link_libraries(${EXE_NAME} boost_fiber)
-    target_link_libraries(${EXE_NAME} aio)
+# Reactor types occur in shared headers and in bm.cpp. Compile the entire
+# buffer-manager library separately for each backend, not only main().
+foreach(BACKEND IN ITEMS uring libaio)
+    if(BACKEND STREQUAL "uring")
+        set(EXE_NAME buffer_mgr)
+        set(UTILS_NAME buffer_mgr_utils)
+        set(USE_LIBAIO 0)
+    else()
+        set(EXE_NAME buffer_mgr_libaio)
+        set(UTILS_NAME buffer_mgr_libaio_utils)
+        set(USE_LIBAIO 1)
+    endif()
+    add_library(${UTILS_NAME} ${BUFFER_MGR_UTIL_SOURCES})
+    target_compile_definitions(${UTILS_NAME} PUBLIC BUFFER_MGR_USE_LIBAIO=${USE_LIBAIO})
+    target_link_libraries(${UTILS_NAME} PUBLIC utils liburing boost_fiber aio)
+    add_executable(${EXE_NAME} buffer_mgr.cpp)
+    target_link_libraries(${EXE_NAME} PRIVATE ${UTILS_NAME})
 endforeach()
