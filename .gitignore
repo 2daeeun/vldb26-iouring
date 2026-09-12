@@ -4,6 +4,11 @@ build/
 build-fig5*/
 results/figure5/
 __pycache__/
+/password.conf
+/password.conf~
+/password.conf.*
+!/password.conf.example
+/.password.conf.*
 .Rhistory
 
 
